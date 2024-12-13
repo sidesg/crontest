@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "crontest"
+version = "0.1.0"
+description = "Basic example of a utility to move files from a watchfolder to a target folder if they don't already exist in target."
+authors = ["gsides_cmtq <gsides@cinematheque.qc.ca>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pytest = "^8.3.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
