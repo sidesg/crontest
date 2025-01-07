@@ -11,8 +11,7 @@ from pathlib import Path
 def main():
     timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
     logdir = Path(os.environ.get('LOGDIR', 'logs'))
-    args = sys.argv
-    source, target = parse_args(args)
+    source, target = parse_args(sys.argv)
 
     if not logdir.exists():
         logdir.mkdir()
@@ -20,9 +19,11 @@ def main():
         filename=logdir/f'example_{timestamp}.log', 
         format='%(levelname)s:%(message)s',
         encoding='utf-8', level=logging.DEBUG)
+    
+    target_anal = eval_target(Path(target))
 
     for file in source.iterdir():
-        if eval_source_file(file, target) == True:
+        if eval_source_file(file, target_anal) == True:
             cut_paste(file, target)
         else:
             continue
@@ -46,21 +47,28 @@ def parse_args(args: list[str]) -> tuple[Path, Path]:
 
     return (source, target)
 
-def eval_source_file(sourcepath: Path, targetdir: Path) -> bool:
+def eval_target(targetdir: Path) -> tuple[list[str], list[str]]:
     targetnames = [
         file.name 
         for file in targetdir.iterdir() 
         if file.is_file()
-    ]
-    if sourcepath.name in targetnames:
-        logging.warning(f"no transfer: {sourcepath.name}, file of same name already in target")
-        return False
-    
+    ]    
+
     targethashes = [
         buffer_hash(file) 
         for file in targetdir.iterdir()
         if file.is_file()
     ]
+
+    return (targetnames, targethashes)
+
+def eval_source_file(sourcepath: Path, target_anal: tuple[list, list]) -> bool:
+    targetnames, targethashes = target_anal
+
+    if sourcepath.name in targetnames:
+        logging.warning(f"no transfer: {sourcepath.name}, file of same name already in target")
+        return False
+    
     sourcehash = buffer_hash(sourcepath)
 
     if sourcehash in targethashes:
