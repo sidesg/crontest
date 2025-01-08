@@ -7,11 +7,12 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
+from collections import Counter
 
 def main():
     timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
     logdir = Path(os.environ.get('LOGDIR', 'logs'))
-    source, target = parse_args(sys.argv)
+    sourcedir, targetdir = parse_args(sys.argv)
 
     if not logdir.exists():
         logdir.mkdir()
@@ -20,11 +21,13 @@ def main():
         format='%(levelname)s:%(message)s',
         encoding='utf-8', level=logging.DEBUG)
     
-    target_anal = eval_target(Path(target))
+    source_whitelist = eval_sourcedir(sourcedir)
+    
+    target_anal = eval_targetdir(Path(targetdir))
 
-    for file in source.iterdir():
+    for file in source_whitelist:
         if eval_source_file(file, target_anal) == True:
-            cut_paste(file, target)
+            cut_paste(file, targetdir)
         else:
             continue
 
@@ -47,7 +50,34 @@ def parse_args(args: list[str]) -> tuple[Path, Path]:
 
     return (source, target)
 
-def eval_target(targetdir: Path) -> tuple[list[str], list[str]]:
+def eval_sourcedir(sourcedir: Path) -> list[Path]:
+    doubles = list()
+    hashlist = [
+        (file, buffer_hash(file))
+        for file in sourcedir.iterdir()
+        if file.is_file()
+    ]
+    
+    for i, file in enumerate(hashlist):
+        if file[0] not in doubles:
+            for comparison in hashlist[i+1:]:
+                if file[1] == comparison[1]:
+                    doubles.append(file[0])
+                    doubles.append(comparison[0])
+
+                    logging.warning(f"Files skipped: {file[0].name}, {comparison[0].name} duplicate hashes")
+
+    doubles = list(set(doubles))
+
+    whitelist = [
+        tup[0]
+        for tup in hashlist
+        if not tup[0] in doubles
+    ]
+
+    return whitelist
+
+def eval_targetdir(targetdir: Path) -> tuple[list[str], list[str]]:
     targetnames = [
         file.name 
         for file in targetdir.iterdir() 

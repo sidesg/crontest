@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 
-from crontest.crontest import parse_args, eval_source_file, eval_target
+from crontest.crontest import parse_args, eval_source_file, eval_targetdir, eval_sourcedir
 
 def test_arg_num():
     # Not enough arguments
@@ -41,7 +41,7 @@ def test_find_folders():
 def test_file_eval():
     args = ["chrontest.py", "tests/sourcedir", "tests/targetdir"]
     source, target = parse_args(args)
-    targetanal = eval_target(Path(target))
+    targetanal = eval_targetdir(Path(target))
 
     # Accepts a file that doesn't exist in target
     assert eval_source_file(
@@ -60,7 +60,16 @@ def test_file_eval():
         Path("tests/sourcedir/docfour.csv"),
         targetanal
     ) == False
-    
+
+def test_eval_sourcedir():
+    sourcedir = Path("tests/redundsource")
+    whitelist = eval_sourcedir(sourcedir)
+    whitelist = [file.name for file in whitelist]
+
+    assert whitelist == [
+        "five.csv",
+        "three.csv",
+    ]
 
 def test_misc():
     args = ["chrontest.py", "tests/sourcedir", "tests/targetdir"]
